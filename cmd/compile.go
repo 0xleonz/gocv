@@ -19,11 +19,7 @@ var compileCmd = &cobra.Command{
 	Use:   "compile",
 	Short: "Compila uno o más currículums usando Typst",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg, err := config.Load()
-		if err != nil {
-			fmt.Println(utils.Colorize("❌ Error cargando configuración: "+err.Error(), utils.Red))
-			os.Exit(1)
-		}
+		cfg := AppConfig
 
 		if selectFlag {
 			selectAndCompile(cfg)

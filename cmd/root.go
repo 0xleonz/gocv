@@ -1,49 +1,38 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-
-	"path/filepath"
+	"fmt"
 	"os"
+
+	"github.com/spf13/cobra"
+	"gitlab.com/0xleonz/gocv/internal/config"
 )
 
+// cnfig cargada
+var AppConfig *config.LoadedConfig
 
-
-// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "gocv",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-				examples and usage of using your application. For example:
-
-				Cobra is a CLI library for Go that empowers applications.
-				This application is a tool to generate the needed files
-				to quickly create a Cobra application.`,
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Short: "Generador de CVs con Typst",
+	Long: `gocv es una herramienta CLI para compilar y gestionar múltiples currículums escritos en Typst.
+Carga configuración desde ~/.config/gocv/config.yml y compila sólo cuando es necesario.`,
 }
 
 func Execute() {
-	err := rootCmd.Execute()
+	var err error
+	AppConfig, err = config.Load()
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "❌ Error cargando configuración: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
-// Cobra init
-func initConfig() {
-	home, _ := os.UserHomeDir()
-	viper.AddConfigPath(filepath.Join(home, ".config/gocv"))
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AutomaticEnv()
-	_ = viper.ReadInConfig()
-}
-
+// globalFlags here
 func init() {
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.gocv.yaml)")
-	cobra.OnInitialize(initConfig)
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	cobra.OnInitialize()
 }
-
 
