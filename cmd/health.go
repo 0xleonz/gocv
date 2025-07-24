@@ -1,40 +1,110 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"gitlab.com/0xleonz/gocv/internal/compile"
+	"gitlab.com/0xleonz/gocv/internal/config"
+	"gitlab.com/0xleonz/gocv/internal/utils"
 )
 
-// healthCmd represents the health command
 var healthCmd = &cobra.Command{
 	Use:   "health",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Verifica que el entorno esté listo para compilar los CVs",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("health called")
+		cfg := AppConfig
+		ok := true
+		needsCompile := []string{}
+
+		fmt.Println(utils.Colorize("🩺 Verificando entorno...\n", utils.Cyan))
+
+		if cfg != nil {
+			fmt.Println(utils.Colorize("✅ Configuración cargada correctamente", utils.Green))
+		} else {
+			fmt.Println(utils.Colorize("❌ No se pudo cargar la configuración", utils.Red))
+			os.Exit(1)
+		}
+
+		// Verificar templates
+		templatesDir := cfg.Data.TemplatesDir
+		if info, err := os.Stat(templatesDir); err == nil && info.IsDir() {
+			fmt.Println(utils.Colorize("✅ Directorio de templates encontrado: "+templatesDir, utils.Green))
+		} else {
+			fmt.Println(utils.Colorize("❌ No se encontró el directorio de templates: "+templatesDir, utils.Red))
+			ok = false
+		}
+
+		// Verificar recompilación
+		for name, cv := range cfg.Data.CVs {
+			templatePath := filepath.Join(templatesDir, cv.Template)
+			if _, err := os.Stat(templatePath); err != nil {
+				fmt.Println(utils.Colorize("❌ Template faltante para '"+name+"': "+templatePath, utils.Red))
+				ok = false
+				continue
+			}
+
+			fmt.Println(utils.Colorize("✅ Template para '"+name+"' OK", utils.Green))
+
+			if config.TemplateNeedsRecompile(templatePath, cv.LastCompileTime()) {
+				fmt.Println(utils.Colorize("🔄 Template de '"+name+"' fue modificado recientemente", utils.Yellow))
+				needsCompile = append(needsCompile, name)
+			}
+		}
+
+		// Verificar typst 
+		if _, err := exec.LookPath("typst"); err != nil {
+			fmt.Println(utils.Colorize("❌ typst no está en el PATH", utils.Red))
+			ok = false
+		} else {
+			fmt.Println(utils.Colorize("✅ typst encontrado en el PATH", utils.Green))
+		}
+
+		fmt.Println()
+
+		if ok && len(needsCompile) == 0 {
+			fmt.Println(utils.Colorize("🎉 Todo está listo para compilar 🎯", utils.Cyan))
+			return
+		}
+
+		if len(needsCompile) > 0 {
+			fmt.Println(utils.Colorize("⚠️  Hay CVs cuyo template fue modificado recientemente:", utils.Yellow))
+			for _, name := range needsCompile {
+				fmt.Println("  •", utils.Colorize(name, utils.Purple))
+			}
+
+			fmt.Print(utils.Colorize("\n¿Deseas compilarlos ahora? [s/N]: ", utils.Cyan))
+			reader := bufio.NewReader(os.Stdin)
+			input, _ := reader.ReadString('\n')
+			input = strings.TrimSpace(strings.ToLower(input))
+
+			if input == "s" || input == "sí" || input == "si" {
+				for _, name := range needsCompile {
+					cv := cfg.Data.CVs[name]
+					templatePath := filepath.Join(cfg.Data.TemplatesDir, cv.Template)
+					if err := compile.CV(name, cv, cfg.Data.OutputDir, templatePath); err == nil {
+						cfg.Viper.Set(fmt.Sprintf("cvs.%s.last_compile", name), utils.NowRFC3339())
+					}
+				}
+				_ = cfg.Save()
+			} else {
+				fmt.Println(utils.Colorize("ℹ️  Compilación omitida", utils.Yellow))
+			}
+		}
+
+		if !ok {
+			fmt.Println(utils.Colorize("\n⚠️  Hay problemas que resolver antes de compilar", utils.Red))
+			os.Exit(1)
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(healthCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// healthCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// healthCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
+

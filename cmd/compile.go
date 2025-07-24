@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 
 	"github.com/spf13/cobra"
 	"gitlab.com/0xleonz/gocv/internal/config"
 	"gitlab.com/0xleonz/gocv/internal/utils"
+	"gitlab.com/0xleonz/gocv/internal/compile"
 )
 
 var selectFlag bool
@@ -41,7 +41,7 @@ func compileAllIfModified(cfg *config.LoadedConfig) {
 	for name, cv := range cfg.Data.CVs {
 		templatePath := filepath.Join(cfg.Data.TemplatesDir, cv.Template)
 		if config.TemplateNeedsRecompile(templatePath, cv.LastCompileTime()) {
-			compileCV(name, cv, cfg.Data.OutputDir, templatePath)
+			compile.CV(name, cv, cfg.Data.OutputDir, templatePath)
 			now := utils.NowRFC3339()
 			cfg.Viper.Set(fmt.Sprintf("cvs.%s.last_compile", name), now)
 		}
@@ -74,33 +74,11 @@ func selectAndCompile(cfg *config.LoadedConfig) {
 	name := keys[index-1]
 	cv := cvs[name]
 	templatePath := filepath.Join(cfg.Data.TemplatesDir, cv.Template)
-	compileCV(name, cv, cfg.Data.OutputDir, templatePath)
+	compile.CV(name, cv, cfg.Data.OutputDir, templatePath)
 
 	fmt.Println(utils.Colorize("\n📘 Descripción larga:\n", utils.Green))
 	fmt.Println(cv.LongDescription)
 
 	now := utils.NowRFC3339()
 	cfg.Viper.Set(fmt.Sprintf("cvs.%s.last_compile", name), now)
-}
-
-func compileCV(name string, cv config.CVConfig, outputDir string, templatePath string) {
-	output := filepath.Join(outputDir, name+".pdf")
-
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
-		fmt.Println(utils.Colorize("❌ No se pudo crear el directorio de salida: "+err.Error(), utils.Red))
-		return
-	}
-
-	fmt.Println(utils.Colorize("🛠️  Compilando "+name+"...", utils.Pink))
-	cmd := exec.Command("typst", "compile", templatePath, output)
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		fmt.Println(utils.Colorize("❌ Falló la compilación: "+err.Error(), utils.Red))
-		return
-	}
-
-	fmt.Println(utils.Colorize("✅ Compilado: "+output, utils.Green))
 }
