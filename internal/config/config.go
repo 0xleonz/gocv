@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 type CVConfig struct {
@@ -15,11 +16,10 @@ type CVConfig struct {
 	LongDescription string            `mapstructure:"long_description"`
 	Template        string            `mapstructure:"template"`
 	Source          string            `mapstructure:"source"`
-	LastCompile     string            `mapstructure:"last_compile"` // chatgpt: almacenado como string
+	LastCompile     string            `mapstructure:"last_compile"`
 	Vars            map[string]string `mapstructure:"vars"`
 }
 
-// string LastCompile -> *time.Time
 func (cv CVConfig) LastCompileTime() *time.Time {
 	if cv.LastCompile == "" {
 		return nil
@@ -34,7 +34,7 @@ func (cv CVConfig) LastCompileTime() *time.Time {
 type Config struct {
 	OutputDir       string              `mapstructure:"output_dir"`
 	DefaultTemplate string              `mapstructure:"default_template"`
-	TemplatesDir    string							`mapstructure:"templates"`
+	TemplatesDir    string              `mapstructure:"templates"`
 	CVs             map[string]CVConfig `mapstructure:"cvs"`
 }
 
@@ -76,7 +76,73 @@ func Load() (*LoadedConfig, error) {
 }
 
 func (lc *LoadedConfig) Save() error {
-	return lc.Viper.WriteConfig()
+	return saveWithYamlV3(lc.Data, lc.Viper.ConfigFileUsed())
+}
+
+func saveWithYamlV3(cfg *Config, path string) error {
+	root := yaml.Node{Kind: yaml.MappingNode}
+
+	root.Content = append(root.Content,
+		yamlScalar("output_dir"), yamlScalar(cfg.OutputDir),
+		yamlScalar("default_template"), yamlScalar(cfg.DefaultTemplate),
+		yamlScalar("templates"), yamlScalar(cfg.TemplatesDir),
+	)
+
+	cvsKey := yamlScalar("cvs")
+	cvsMap := &yaml.Node{Kind: yaml.MappingNode}
+
+	for name, cv := range cfg.CVs {
+		key := yamlScalar(name)
+		val := &yaml.Node{Kind: yaml.MappingNode}
+
+		// Campos básicos
+		descK, descV := yamlScalar("description"), yamlScalar(cv.Description)
+		longK, longV := yamlScalarWithStyle("long_description", cv.LongDescription, yaml.LiteralStyle)
+		templK, templV := yamlScalar("template"), yamlScalar(cv.Template)
+		sourceK, sourceV := yamlScalar("source"), yamlScalar(cv.Source)
+		lastK, lastV := yamlScalar("last_compile"), yamlScalar(cv.LastCompile)
+
+		val.Content = append(val.Content,
+			descK, descV,
+			longK, longV,
+			templK, templV,
+			sourceK, sourceV,
+			lastK, lastV,
+		)
+
+		if len(cv.Vars) > 0 {
+			varsNode := &yaml.Node{Kind: yaml.MappingNode}
+			for k, v := range cv.Vars {
+				varsNode.Content = append(varsNode.Content, yamlScalar(k), yamlScalar(v))
+			}
+			val.Content = append(val.Content, yamlScalar("vars"), varsNode)
+		}
+
+		cvsMap.Content = append(cvsMap.Content, key, val)
+	}
+	root.Content = append(root.Content, cvsKey, cvsMap)
+
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("no se pudo crear archivo config: %w", err)
+	}
+	defer f.Close()
+
+	enc := yaml.NewEncoder(f)
+	enc.SetIndent(2)
+	return enc.Encode(&root)
+}
+
+func yamlScalar(value string) *yaml.Node {
+	return &yaml.Node{
+		Kind:  yaml.ScalarNode,
+		Value: value,
+	}
+}
+
+func yamlScalarWithStyle(key, value string, style yaml.Style) (*yaml.Node, *yaml.Node) {
+	return &yaml.Node{Kind: yaml.ScalarNode, Value: key},
+		&yaml.Node{Kind: yaml.ScalarNode, Value: value, Style: style}
 }
 
 func expandPath(p string) string {
@@ -97,4 +163,3 @@ func TemplateNeedsRecompile(templatePath string, lastCompile *time.Time) bool {
 	}
 	return info.ModTime().After(lastCompile.Add(-15 * time.Second))
 }
-

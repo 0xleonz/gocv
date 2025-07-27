@@ -8,9 +8,9 @@ import (
 	"strconv"
 
 	"github.com/spf13/cobra"
+	"gitlab.com/0xleonz/gocv/internal/compile"
 	"gitlab.com/0xleonz/gocv/internal/config"
 	"gitlab.com/0xleonz/gocv/internal/utils"
-	"gitlab.com/0xleonz/gocv/internal/compile"
 )
 
 var selectFlag bool
@@ -42,13 +42,13 @@ func compileAllIfModified(cfg *config.LoadedConfig) {
 		templatePath := filepath.Join(cfg.Data.TemplatesDir, cv.Template)
 		if config.TemplateNeedsRecompile(templatePath, cv.LastCompileTime()) {
 			compile.CV(name, cv, cfg.Data.OutputDir, templatePath)
-			now := utils.NowRFC3339()
-			cfg.Viper.Set(fmt.Sprintf("cvs.%s.last_compile", name), now)
+			cv.LastCompile = utils.NowRFC3339()
+			cfg.Data.CVs[name] = cv
 		}
 	}
 }
 
-//seleccionado manualmente
+// seleccionado manualmente
 func selectAndCompile(cfg *config.LoadedConfig) {
 	cvs := cfg.Data.CVs
 
@@ -79,6 +79,6 @@ func selectAndCompile(cfg *config.LoadedConfig) {
 	fmt.Println(utils.Colorize("\n📘 Descripción larga:\n", utils.Green))
 	fmt.Println(cv.LongDescription)
 
-	now := utils.NowRFC3339()
-	cfg.Viper.Set(fmt.Sprintf("cvs.%s.last_compile", name), now)
+	cv.LastCompile = utils.NowRFC3339()
+	cfg.Data.CVs[name] = cv
 }
