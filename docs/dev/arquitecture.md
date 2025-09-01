@@ -1,3 +1,9 @@
+# gocv
+
+We use a configuration defined at `` as AppConfig
+that contains:
+
+```yaml
 cvs:
     farmer:
         description: 'Currículum base: backend'
@@ -26,3 +32,12 @@ cvs:
 default_template: cvBase.typ
 output_dir: ~/cvs/
 templates: ~/.config/gocv/templates
+```
+
+### Comandos
+
+- init:
+- compile:
+- health:
+- get:
+- compile:

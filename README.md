@@ -17,3 +17,6 @@ Flags:
 
 Use "gocv [command] --help" for más información sobre un comando.
 
+### 
+Los currículums estan basados en:
+()[]
