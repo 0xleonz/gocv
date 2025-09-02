@@ -7,17 +7,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
 
 type CVConfig struct {
-	Description     string            `mapstructure:"description"`
-	LongDescription string            `mapstructure:"long_description"`
-	Template        string            `mapstructure:"template"`
-	Source          string            `mapstructure:"source"`
-	LastCompile     string            `mapstructure:"last_compile"`
-	Vars            map[string]string `mapstructure:"vars"`
+	Description     string            `yaml:"description"`
+	LongDescription string            `yaml:"long_description"`
+	Template        string            `yaml:"template"`
+	Source          string            `yaml:"source"`
+	LastCompile     string            `yaml:"last_compile"`
+	Vars            map[string]string `yaml:"vars"`
 }
 
 func (cv CVConfig) LastCompileTime() *time.Time {
@@ -32,31 +31,26 @@ func (cv CVConfig) LastCompileTime() *time.Time {
 }
 
 type Config struct {
-	OutputDir       string              `mapstructure:"output_dir"`
-	DefaultTemplate string              `mapstructure:"default_template"`
-	TemplatesDir    string              `mapstructure:"templates"`
-	CVs             map[string]CVConfig `mapstructure:"cvs"`
+	OutputDir       string              `yaml:"output_dir"`
+	DefaultTemplate string              `yaml:"default_template"`
+	TemplatesDir    string              `yaml:"templates"`
+	CVs             map[string]CVConfig `yaml:"cvs"`
 }
 
 type LoadedConfig struct {
-	Data  *Config
-	Viper *viper.Viper
+	Data *Config
+	Path string
 }
 
 func Load() (*LoadedConfig, error) {
 	configPath := filepath.Join(os.Getenv("HOME"), ".config", "gocv", "config.yml")
-
-	v := viper.New()
-	v.SetConfigFile(configPath)
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.AutomaticEnv()
-
-	if err := v.ReadInConfig(); err != nil {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
 		return nil, fmt.Errorf("error leyendo config: %w", err)
 	}
 
 	var cfg Config
-	if err := v.Unmarshal(&cfg); err != nil {
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("error parseando config: %w", err)
 	}
 
@@ -70,13 +64,13 @@ func Load() (*LoadedConfig, error) {
 	}
 
 	return &LoadedConfig{
-		Data:  &cfg,
-		Viper: v,
+		Data: &cfg,
+		Path: configPath,
 	}, nil
 }
 
 func (lc *LoadedConfig) Save() error {
-	return saveWithYamlV3(lc.Data, lc.Viper.ConfigFileUsed())
+	return saveWithYamlV3(lc.Data, lc.Path)
 }
 
 func saveWithYamlV3(cfg *Config, path string) error {
@@ -110,6 +104,7 @@ func saveWithYamlV3(cfg *Config, path string) error {
 			lastK, lastV,
 		)
 
+		// Variables extra
 		if len(cv.Vars) > 0 {
 			varsNode := &yaml.Node{Kind: yaml.MappingNode}
 			for k, v := range cv.Vars {
@@ -146,9 +141,9 @@ func yamlScalarWithStyle(key, value string, style yaml.Style) (*yaml.Node, *yaml
 }
 
 func expandPath(p string) string {
-	if strings.HasPrefix(p, "~") {
+	if strings.HasPrefix(p, "~"+string(os.PathSeparator)) {
 		home, _ := os.UserHomeDir()
-		p = strings.Replace(p, "~", home, 1)
+		p = filepath.Join(home, p[2:])
 	}
 	return os.ExpandEnv(p)
 }
@@ -161,5 +156,6 @@ func TemplateNeedsRecompile(templatePath string, lastCompile *time.Time) bool {
 	if lastCompile == nil {
 		return true
 	}
+	// revisa el template es más reciente (con margen de 15s)
 	return info.ModTime().After(lastCompile.Add(-15 * time.Second))
 }

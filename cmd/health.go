@@ -57,7 +57,7 @@ var healthCmd = &cobra.Command{
 			}
 		}
 
-		// Verificar typst 
+		// Verificar typst
 		if _, err := exec.LookPath("typst"); err != nil {
 			fmt.Println(utils.Colorize("❌ typst no está en el PATH", utils.Red))
 			ok = false
@@ -84,14 +84,32 @@ var healthCmd = &cobra.Command{
 			input = strings.TrimSpace(strings.ToLower(input))
 
 			if input == "s" || input == "sí" || input == "si" {
+				// Flag to track if any CV was compiled successfully
+				compiled := false
 				for _, name := range needsCompile {
 					cv := cfg.Data.CVs[name]
 					templatePath := filepath.Join(cfg.Data.TemplatesDir, cv.Template)
+
 					if err := compile.CV(name, cv, cfg.Data.OutputDir, templatePath); err == nil {
-						cfg.Viper.Set(fmt.Sprintf("cvs.%s.last_compile", name), utils.NowRFC3339())
+						fmt.Println(utils.Colorize(fmt.Sprintf("✅ Compilado: %s", filepath.Join(cfg.Data.OutputDir, name)), utils.Green))
+
+						// Correctly update the in-memory struct
+						updatedCV := cfg.Data.CVs[name]
+						updatedCV.LastCompile = utils.NowRFC3339()
+						cfg.Data.CVs[name] = updatedCV
+
+						compiled = true
+					} else {
+						fmt.Println(utils.Colorize(fmt.Sprintf("❌ Error compilando %s: %v", name, err), utils.Red))
 					}
 				}
-				_ = cfg.Save()
+
+				// Save the configuration only if there were successful compilations
+				if compiled {
+					if err := cfg.Save(); err != nil {
+						fmt.Println(utils.Colorize(fmt.Sprintf("❌ Error al guardar la configuración: %v", err), utils.Red))
+					}
+				}
 			} else {
 				fmt.Println(utils.Colorize("ℹ️  Compilación omitida", utils.Yellow))
 			}
@@ -107,4 +125,3 @@ var healthCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(healthCmd)
 }
-

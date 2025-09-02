@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/lithammer/dedent"
 	"github.com/spf13/cobra"
 	"gitlab.com/0xleonz/gocv/internal/config"
 )
@@ -14,8 +15,10 @@ var AppConfig *config.LoadedConfig
 var rootCmd = &cobra.Command{
 	Use:   "gocv",
 	Short: "Generador de CVs con Typst",
-	Long: `gocv es una herramienta CLI para compilar y gestionar múltiples currículums escritos en Typst.
-Carga configuración desde ~/.config/gocv/config.yml y compila sólo cuando es necesario.`,
+	Long: dedent.Dedent(`
+				gocv es una herramienta CLI para compilar y gestionar múltiples currículums escritos en Typst.
+				Carga configuración desde ~/.config/gocv/config.yml y compila sólo cuando es necesario.
+				`),
 }
 
 func Execute() {
@@ -35,4 +38,3 @@ func Execute() {
 func init() {
 	cobra.OnInitialize()
 }
-
