@@ -19,17 +19,6 @@ type CVConfig struct {
 	Vars            map[string]string `yaml:"vars"`
 }
 
-func (cv CVConfig) LastCompileTime() *time.Time {
-	if cv.LastCompile == "" {
-		return nil
-	}
-	t, err := time.Parse(time.RFC3339, cv.LastCompile)
-	if err != nil {
-		return nil
-	}
-	return &t
-}
-
 type Config struct {
 	OutputDir       string              `yaml:"output_dir"`
 	DefaultTemplate string              `yaml:"default_template"`
@@ -40,6 +29,17 @@ type Config struct {
 type LoadedConfig struct {
 	Data *Config
 	Path string
+}
+
+func (cv CVConfig) LastCompileTime() *time.Time {
+	if cv.LastCompile == "" {
+		return nil
+	}
+	t, err := time.Parse(time.RFC3339, cv.LastCompile)
+	if err != nil {
+		return nil
+	}
+	return &t
 }
 
 func Load() (*LoadedConfig, error) {
