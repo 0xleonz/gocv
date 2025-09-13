@@ -1,0 +1,61 @@
+output_dir: /home/leonz/work/cvs/
+default_template: cvBase.typ
+templates: /home/leonz/.config/gocv/templates
+cvs:
+  base:
+    description: Currículum base para un profesional freelance con 3+ años de experiencia.
+    long_description: |
+      Currículum técnico con más de 3 años de experiencia en desarrollo backend,
+      DevOps e infraestructura cloud. Contiene experiencia como docente universitario
+      en algoritmos, desarrollo de APIs REST con Go y Python, despliegues en AWS y GCP
+      usando Docker y Terraform, integración de CI/CD y monitoreo con Prometheus y Grafana.
+      Incluye proyectos destacados como plataformas distribuidas para votación electrónica,
+      gestión de restaurantes en tiempo real, y sistemas de visión computacional con YOLOv8.
+      Formación sólida en Matemáticas y Ciencias de la Computación por la UNAM, con
+      especialización en geometría computacional, programación concurrente y algoritmos.
+    template: cvFreelance.typ
+    last_compile: 2025-09-01T23:08:52-06:00
+  dwight:
+    description: Currículum de un experto en ventas y gestor regional.
+    long_description: |
+      Currículum de un profesional con experiencia en ventas y
+      gestión de equipos en el sector de la papelería. Experto en
+      incrementar la productividad y las ventas, con un enfoque
+      disciplinado y metódico. Habilidad en la negociación de
+      contratos, implementación de medidas de seguridad y resolución
+      de conflictos. Experiencia en agricultura, agro-turismo y
+      artes marciales.
+      Formación en Business Administration de la Scranton University.
+      Habilidades en liderazgo, planificación estratégica y
+      combate.
+    template: cvDwight.typ
+    last_compile: 2025-09-01T23:08:52-06:00
+  mario:
+    description: Currículum de fontanero y héroe del Reino Champiñón.
+    long_description: |
+      Currículum de un plomero con más de 30 años de experiencia en
+      rescates y aventuras. Experto en navegación de tuberías,
+      combate contra Goombas y Koopas, y uso de power-ups como el
+      Fire Flower y el Super Star. Ha trabajado en la industria
+      de la construcción, plomería y el entretenimiento, destacando
+      por su capacidad para resolver problemas bajo presión y
+      su dedicación a salvar princesas.
+      Formación en plomería y drenaje de la Mushroom Kingdom Plumbing Academy.
+      Habilidades en salto, parkour y conducción de karts.
+    template: cvMario.typ
+    source:
+    last_compile: 2025-09-01T23:08:52-06:00
+  adawong:
+    description: Currículum de agente y espía freelance.
+    long_description: |
+      Currículum técnico de una espía profesional con amplia
+      experiencia en operaciones encubiertas, recolección de
+      inteligencia y combate. Habilidad en el uso de una variedad
+      de armas y gadgets tecnológicos. Experiencia en infiltración
+      de instalaciones de alto riesgo, recuperación de muestras
+      biológicas y manipulación de sistemas de seguridad.
+      Especialización en biotecnología y virología. Ha trabajado con
+      organizaciones gubernamentales y corporativas.
+      Habilidades en combate cuerpo a cuerpo, hacking y sigilo.
+    template: cvAdaWong.typ
+    last_compile: 2025-09-01T23:08:52-06:00

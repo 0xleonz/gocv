@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"embed"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,9 @@ import (
 	"github.com/spf13/cobra"
 	"gitlab.com/0xleonz/gocv/internal/utils"
 )
+
+//go:embed templates/cvBase.typ templates/cvDwight.typ templates/cvMarioBros.typ
+var files embed.FS
 
 var initCmd = &cobra.Command{
 	Use:   "init",
@@ -81,4 +85,3 @@ func downloadToFile(url, dest string) error {
 	_, err = io.Copy(out, resp.Body)
 	return err
 }
-
